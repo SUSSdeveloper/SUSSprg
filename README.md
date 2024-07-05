@@ -5,18 +5,17 @@
 1. [Overview](#overview)
 2. [List of Modifications in the Linux Source Code](#list-of-modifications-in-the-linux-source-code)
 3. [Installation Roadmap](#installation-roadmap)
-4. [Working with SUSS](#working-with-suss)
-5. [Contact Us](#contact-us)
-6. [References](#references)
+4. [Contact Us](#contact-us)
+5. [References](#references)
 
 ### Overview
 Welcome to SUSS (Speeding Up Slow Start), an open-source project aimed at tackling the issue of bandwidth under-utilization during the TCP slow-start phase. Our lightweight sender-side add-on, compatible with CUBIC [1] and implemented in Linux kernel 5.19.10, focuses on reducing flow completion time (FCT), a vital performance metric for the Internet end-users [2].
 With SUSS, users simply need to apply the changes to the Linux kernel's source code and recompile it for seamless integration. This README includes an installation roadmap and excerpts from a more comprehensive academic paper that delve into detailed information about SUSS, covering its theory and performance analysis. For the full in-depth analysis, please refer to the academic paper available at [will_be_published](http://will_be_published/).
-We value community contributions and will share the contributing guidelines upon successful paper acceptance. Join us in optimizing TCP connections for faster, more efficient data transfer.
+We value community contributions and will share the contributing guidelines shortly. Join us in optimizing TCP connections for faster, more efficient data transfer.
 
 
 ### List of Modifications in the Linux Source Code
-SUSS introduces multiple modifications to the Linux TCP source code. <b>We also added lines of code for log and performance tracking purposes, which are not part of the final product.</b> The original Linux files can be found in the `src/linux-5.19.10` directory, while the altered versions are stored in the `src/suss` directory within the project.
+SUSS introduces multiple modifications to the Linux TCP source code. <b>We also added lines of code for logging and performance tracking, which can be removed in the final product.</b> The original Linux files can be found in the `sourceCode/linux-VER/orig` directory, while the altered versions are stored in the `sourceCode/linux-VER/suss` directory within the project.
 These changes are as follows:
 
 - a) In the file `tcp.h`, SUSS defines a set of global variables within the `struct tcp_sock`.
@@ -25,71 +24,74 @@ These changes are as follows:
 - d) In the file `tcp_input.c`, which deals with incoming acknowledgments (ACKs), SUSS adds a few lines of code.
 - e) To assign a random ID for each test, a few lines of code have been added to the file `tcp_cong.c`.
 
-You can identify SUSS's specific modifications in the Linux source code by searching for the "/* suss" comments in the files located in the `src` directory.
+You can identify SUSS's specific modifications in the Linux source code by searching for the "/* suss" comments in the files located in the `sourceCode/linux-VER/suss` directory.
 
 
 ### Installation Roadmap
-SUSS is currently implemented on Ubuntu.
-The installation process in the Linux command-line interface (CLI) involves the following steps:
-1. Download the kernel source code:
-   <pre>
-	   wget https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.19.10.tar.xz
-   </pre>
-  
-2. Extract the contents of a tarball archive named "linux-5.19.10.tar.xz.":
-   <pre>
-	   tar xvf linux-5.19.10.tar.xz
-   </pre>   
-3. Update the local package index and Install necessary build tools:
+SUSS is currently implemented in Linux kernel 5.19.10 and 6.8.4. We recomend using a Debian-based Linux distribution like Ubuntu.
+The simple installation process involves the following steps:
+1. Prepare a Linux server. We recommend Ubuntu Server 24.04 LTS; you can download the ISO file from [here](https://ubuntu.com/download/server/thank-you?version=24.04&architecture=amd64&lts=true).
+
+2. Update the local package index and Install necessary build tools:
    <pre>
 	   sudo apt-get update
-	   sudo apt-get install build-essential
+	   sudo apt-get install -y build-essential  libncurses-dev  libssl-dev  make  gcc  gawk  flex  bison  openssl  dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf  llvm zstd dwarves
    </pre>
-4. Configure the kernel:
-   <br>Change to the kernel source directory and configure the kernel based on your system's current configuration
+
+3. Install the Linux source package from the repository, then navigate to the source directory and extract the files.
    <pre>
-	   cd linux-5.19.10
-	   make oldconfig
+	   sudo apt-get install linux-source-6.8.0
+	   cd /usr/src
+	   sudo tar -xvf linux-source-6.8.0.tar.bz2
    </pre>
-   This will create a `.config` file with the configuration options.
-	
-5. Prior to compiling the kernel, download the src directory from the project and replace the corresponding files with the modified ones:
+
+4. Copy the current kernel configuration file from the boot directory to the extracted directory, renaming it as `.config'. This step ensures that the existing kernel settings are preserved and used as a baseline for further configuration. 
+   <pre>
+	   cd /usr/src/linux-source-6.8.0/
+	   sudo cp /boot/config-$(uname -r) .config
+	   sudo make oldconfig
+   </pre>
+
+5. Open the `.config` file with a text editor and find keys of CONFIG_SYSTEM_TRUSTED_KEYS and CONFIG_SYSTEM_REVOCATION_KEYS and empty their values.
+
+
+6. Prior to compiling the kernel, download the `sourceCode' directory from the project and replace the corresponding files with the modified ones. In this example, run:
       <pre>
-	   cp  src/suss/tcp_cubic.c	linux-5.19.10/net/ipv4/tcp_cubic.c
-	   cp  src/suss/tcp_input.c	linux-5.19.10/net/ipv4/tcp_input.c
-	   cp  src/suss/tcp_output.c	linux-5.19.10/net/ipv4/tcp_output.c
-	   cp  src/suss/tcp_cong.c	linux-5.19.10/net/ipv4/tcp_cong.c
-	   cp  src/suss/tcp.h		linux-5.19.10/include/linux/tcp.h
+	   sudo cp  sourceCode/linux-6.8/suss/tcp_cubic.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_cubic.c
+	   sudo cp  sourceCode/linux-6.8/suss/tcp_input.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_input.c
+	   sudo cp  sourceCode/linux-6.8/suss/tcp_output.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_output.c
+	   sudo cp  sourceCode/linux-6.8/suss/tcp_cong.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_cong.c
+	   sudo cp  sourceCode/linux-6.8/suss/tcp.h		/usr/src/linux-source-6.8.0/include/linux/tcp.h
    </pre>
-   Open the `.config` file with a text editor and find keys of CONFIG_SYSTEM_TRUSTED_KEYS and CONFIG_SYSTEM_REVOCATION_KEYS and empty their values.
       
-6. Change to the kernel source directory and compile the kernel:
+7. Compile the kernel:
    <pre>
-	   make
+	   sudo make -j $(nproc)
    </pre>
    <br>The compilation process may take some time, depending on your system's hardware.
-7. After successful compilation, install the new kernel using:
+
+8. After successful compilation, install the new kernel using:
    <pre>
-	   sudo make modules_install
+	   sudo make modules_install -j $(nproc)
 	   sudo make install
    </pre>
    <br>This will install the kernel image, kernel modules, and update the bootloader configuration.
-8. Update GRUB Configuration:
+
+9. Update GRUB Configuration:
    <pre>
 	   sudo update-grub
+
    </pre>
-9. After the installation and GRUB configuration update, reboot your system to use the newly compiled kernel:
+10. After the installation and GRUB configuration update, reboot your system to use the newly compiled kernel:
    <pre>
 	   sudo reboot
    </pre>
 
+11. To verify a successful installation, confirm that `suss' appears in the output of:
+   <pre>
+	   ls /sys/module/tcp_cubic/parameters
+   </pre>
 
-### Working with SUSS
-SUSS logs TCP measurements in the file `/var/log/kern.log` on servers where it is installed, making it convenient to access the measurements after downloading from such servers.
-To filter the logs, use:
-<pre>
-	grep "SUSSmsg" /var/log/kern.log
-</pre>
 
 ### Contact Us
 This section will be updated after the publication of the paper.

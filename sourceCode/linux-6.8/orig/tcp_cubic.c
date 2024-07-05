@@ -30,15 +30,6 @@
 #include <linux/module.h>
 #include <linux/math64.h>
 #include <net/tcp.h>
-/* suss start block	*/
-static int suss = 1;
-module_param(suss, int, 0644);
-MODULE_PARM_DESC(suss, "0 means suss is inactive");
-static int suss_max = 3;
-module_param(suss_max, int, 0644);
-MODULE_PARM_DESC(suss_max, "max of times the growth factor can be 4");
-/* suss end block	*/
-
 
 #define BICTCP_BETA_SCALE    1024	/* Scale factor beta calculation
 					 * max_cwnd = snd_cwnd * beta
@@ -54,10 +45,6 @@ MODULE_PARM_DESC(suss_max, "max of times the growth factor can be 4");
 #define HYSTART_DELAY_MIN	(4000U)	/* 4 ms */
 #define HYSTART_DELAY_MAX	(16000U)	/* 16 ms */
 #define HYSTART_DELAY_THRESH(x)	clamp(x, HYSTART_DELAY_MIN, HYSTART_DELAY_MAX)
-/* suss start block	*/
-#define BW_SCALE 24
-#define BW_UNIT (1 << BW_SCALE)
-/* suss end block	*/
 
 static int fast_convergence __read_mostly = 1;
 static int beta __read_mostly = 717;	/* = 717/1024 (BICTCP_BETA_SCALE) */
@@ -115,22 +102,6 @@ struct bictcp {
 	u32	end_seq;	/* end_seq of the round */
 	u32	last_ack;	/* last time when the ACK spacing is close */
 	u32	curr_rtt;	/* the minimum rtt of current round */
-/* suss start block	*/
-        u32     suss_head_seq;          /* head of the blue part of the data train              */
-        u32     suss_tail_seq;          /* tail of the blue part of the data train              */
-        u32     suss_round_start_us;    /* the start time of the current round                  */
-        u64     suss_round_no   :5,     /* the current round number                             */
-                suss_gf         :1,     /* cwnd is quadrupled when suss_gf is one               */
-                suss_is_blue    :2,     /* It is 0 if the received ACK is red                   */
-                suss_flag       :1,     /* suss_flag=1 means stop EG when cwnd reaches suss_cap */
-                suss_cap        :14,    /* it is used in HyStart to stop EG when suss_flag=1    */
-                suss_r_minupdate:5,     /* in which round minRTT was updated                    */
-                suss_blue_cnt   :12,    /* number of received blue ACKs in the current round    */
-                suss_perv_delta_t_bat:18,/* how long did it take to receive the blue ACK train
-                                           in the pervious round                                */
-                suss_num_of_jump:3,     /* number of pacing period                              */
-                suss_unused     :3;
-/* suss end block	*/
 };
 
 static inline void bictcp_reset(struct bictcp *ca)
@@ -155,25 +126,11 @@ static inline void bictcp_hystart_reset(struct sock *sk)
 	ca->sample_cnt = 0;
 }
 
-static void cubictcp_init(struct sock *sk)
+__bpf_kfunc static void cubictcp_init(struct sock *sk)
 {
 	struct bictcp *ca = inet_csk_ca(sk);
 
 	bictcp_reset(ca);
-/* suss start block	*/
-        struct tcp_sock *tp = tcp_sk(sk);
-        ca->suss_num_of_jump = 0;
-        ca->suss_gf   = 1;
-        ca->suss_flag = 0;
-        ca->suss_cap  = 0;
-        ca->suss_round_no = 1;
-        ca->suss_head_seq = tp->snd_nxt;
-        ca->suss_tail_seq = tp->snd_nxt + (10 * tp->mss_cache) - 1;
-        if(suss && (sk->sk_pacing_status == SK_PACING_NONE) && (inet_sk(sk)->inet_sport==20480 || inet_sk(sk)->inet_dport==20480))
-            tp->suss_state = 1;
-        else
-            tp->suss_state = 10;
-/* suss end block	*/
 
 	if (hystart)
 		bictcp_hystart_reset(sk);
@@ -182,7 +139,7 @@ static void cubictcp_init(struct sock *sk)
 		tcp_sk(sk)->snd_ssthresh = initial_ssthresh;
 }
 
-static void cubictcp_cwnd_event(struct sock *sk, enum tcp_ca_event event)
+__bpf_kfunc static void cubictcp_cwnd_event(struct sock *sk, enum tcp_ca_event event)
 {
 	if (event == CA_EVENT_TX_START) {
 		struct bictcp *ca = inet_csk_ca(sk);
@@ -363,145 +320,11 @@ tcp_friendliness:
 	 */
 	ca->cnt = max(ca->cnt, 2U);
 }
-/* suss start block	*/
-static u8 func_measure_g(struct sock *sk, u32 delta_t_bat)
-{
-        struct bictcp *ca = inet_csk_ca(sk);
-        struct tcp_sock *tp = tcp_sk(sk);
 
-        u8 value = 0;
-	if(ca->suss_round_no == 2)
-        {
-            if(ca->delay_min > 10000 && delta_t_bat < (ca->delay_min >> 2))
-                value = 1;
-            else
-                tp->suss_state = 10;	//disable SUSS
-        }
-        else
-        {
-            u32 delta_t = delta_t_bat * (1 << (ca->suss_round_no - 2));
-            u32 perv_delta_t = ca->suss_perv_delta_t_bat * (1 << (ca->suss_round_no - 3));
-            u32 scale = 10;
-            u64 mu = div64_long((u64) (delta_t << scale), (perv_delta_t << 1));
-            u64 temp = (mu*delta_t) >> (scale-1);       // instead of  u64 temp = (mu*delta_t*2) >> scale;
-
-            /* cond 1   */
-            if((temp <= ca->delay_min) && (ca->suss_round_no < (suss_max+2)))
-                value = 1;
-            else
-                value = 0;
-
-            /* cond 2   */
-            if(value == 1)// && ca->suss_r_minupdate != ca->suss_round_no)
-            {
-                u32 k = ca->suss_round_no - ca->suss_r_minupdate;
-                u64 temp1 = (k+1) * ca->curr_rtt;
-                u64 temp2 = (ca->delay_min * (k+1)) + ((ca->delay_min * k) >> 3);
-                if(temp1 > temp2)
-                    value = 0;
-            }
-	    printk(KERN_INFO "SUSSmsg id=%u Growth factor is measured. t=%llu Sport=%u G=%u", tp->suss_msg_id, bictcp_clock_us(sk), inet_sk(sk)->inet_sport, 2<<value);
-	}
-        return value;
-}
-
-/* suss end block	*/
-
-static void cubictcp_cong_avoid(struct sock *sk, u32 ack, u32 acked)
+__bpf_kfunc static void cubictcp_cong_avoid(struct sock *sk, u32 ack, u32 acked)
 {
 	struct tcp_sock *tp = tcp_sk(sk);
 	struct bictcp *ca = inet_csk_ca(sk);
-
-/* suss start block	*/
-	u32 una = tp->snd_una - tp->snd_isn;
-	u32 now = bictcp_clock_us(sk);
-	u32 mss = tp->mss_cache;
-	if((tp->suss_state < 3) && (ca->suss_round_no < (suss_max + ca->suss_num_of_jump)))
-	    tp->suss_nwin = ca->suss_num_of_jump;
-	else
-	    tp->suss_nwin = 0;
-
-	if ((tp->suss_state > 2) && (tp->suss_state < 10) && (sk->sk_pacing_status == SK_PACING_NEEDED))
-	    cmpxchg(&sk->sk_pacing_status, SK_PACING_NEEDED, SK_PACING_NONE); //swtich to clocking mode because it seems that EG has stopped
-
-	if(tp->suss_state < 3 && ca->suss_flag == 0)
-	{
-	    if(ca->suss_is_blue == 2)
-		ca->suss_is_blue = 0;
-	/* If it is the head of an ACK train then
-           1) increase round counter    2) switch to ACK clocking mode  */
-	    if(ack > ca->suss_head_seq)
-	    {
-		ca->suss_is_blue = 1;
-		ca->suss_blue_cnt = 0;
-		ca->suss_round_no ++;
-		ca->suss_round_start_us = now;
-		ca->suss_head_seq = tp->snd_nxt;
-		printk(KERN_INFO "SUSSmsg id=%u New round %u is started. t=%llu Sport=%u c=%u i=%u", tp->suss_msg_id, ca->suss_round_no, now, inet_sk(sk)->inet_sport, tp->snd_cwnd, tcp_packets_in_flight(tp));
-		if(tp->suss_state == 2)// not sure if it is necessary
-		{
-		    cmpxchg(&sk->sk_pacing_status, SK_PACING_NEEDED, SK_PACING_NONE);//swtich to ACK clocking mode
-		    tp->suss_state = 1;
-		    printk(KERN_INFO "SUSSmsg id=%u Switch to clocking mode. t=%llu Sport=%u c=%u i=%u", tp->suss_msg_id, now, inet_sk(sk)->inet_sport, tp->snd_cwnd, tcp_packets_in_flight(tp));
-		}
-	    }
-	/*	If it is the tail of the blue part of an ACK train then measure delta_t_bat	*/
-	    if(ack > ca->suss_tail_seq)
-	    {
-		ca->suss_is_blue = 2;
-		/* temp1 is the number of blue packets that are sent in the current round */
-		u32 temp1 = (ca->suss_round_no - 1);
-		temp1 = 10 * (1 << temp1);
-		ca->suss_tail_seq = ca->suss_head_seq + (temp1 * mss) - 1;
-		u32 temp2 = (now - ca->suss_round_start_us);
-		u32 temp3 = ca->suss_blue_cnt << 1;
-		u32 temp4 = temp2 * (10 * (1 << (ca->suss_round_no-1)));
-		u32 delta_t_bat= div64_long((u64) temp4, temp3);
-		printk(KERN_INFO "SUSSmsg id=%u Blue ACK train in round %u is received in %u us. t=%llu Sport=%u dtB=%u c=%u i=%u temp3=%u temp4=%u", tp->suss_msg_id, ca->suss_round_no, now, inet_sk(sk)->inet_sport, temp2, delta_t_bat, tp->snd_cwnd, tcp_packets_in_flight(tp), temp3, temp4);
-		if(ca->suss_gf == 1)
-		    ca->suss_gf = func_measure_g(sk, delta_t_bat);
-		if(ca->suss_gf == 1)
-		{
-		    ca->suss_num_of_jump += 1;
-		    ca->suss_perv_delta_t_bat = delta_t_bat;
-		    u32 extra = temp1 * ((1 << ca->suss_num_of_jump) - 1);                 // extra red, will be sent in the current round
-		    u32 temp5 = (temp1 >> 1) * ((1 << (ca->suss_num_of_jump - 1)) - 1);    // number of red packets in flight
-		    u64 rate;
-		    tp->suss_state = 2;
-		    tp->suss_limit = (tp->snd_cwnd+acked) + extra - temp5;
-		    u32 duration = ca->delay_min - (ca->delay_min >> (ca->suss_round_no-1));
-		    rate = div64_long((u64) (extra * mss) * BW_UNIT, duration);
-		    rate *= USEC_PER_SEC;
-		    rate = rate >> BW_SCALE;
-		    tp->suss_rate = rate;
-		    u32 temp6 = (ca->delay_min - duration) >> 1;
-		    if(temp6 > (delta_t_bat >> 1))
-		    {
-			u64 gap = (temp6 - (delta_t_bat >> 1)) * 1000;
-			u64 oldgap = (temp6 - delta_t_bat) * 1000;
-			tp->suss_pacing_start_ns = tp->tcp_clock_cache + gap;
-			printk(KERN_INFO "SUSSmsg id=%u Total amount of %u packets is paced in %u microSec with rate %u Bps starting from time %llu ns. t=%llu Sport=%u limit=%u delta_t_bat=%u gap=%llu", tp->suss_msg_id, extra, duration, rate, tp->suss_pacing_start_ns, 
-			now, inet_sk(sk)->inet_sport, tp->suss_limit, delta_t_bat, gap);
-		    }else
-		    {
-			tp->suss_state = 1;
-			ca->suss_num_of_jump -= 1;
-		    }
-		}
-	    }
-	    if(ca->suss_is_blue != 0)
-		ca->suss_blue_cnt += acked;
-	    if(ca->suss_is_blue == 0 && tp->suss_state == 2)
-		tp->snd_cwnd -= acked;
-	}
-
-	printk(KERN_INFO "SUSSmsg@ id=%u t=%llu Sport=%u c=%u i=%u a=%u "
-		"RTT=%u moRTT=%u minRTT=%u d=%u l=%u "
-		"tRnd=%u s=%u Bcnt=%u Rnd=%u ",
-		tp->suss_msg_id, tp->tcp_mstamp, inet_sk(sk)->inet_sport, tp->snd_cwnd, tcp_packets_in_flight(tp), acked,
-		(tp->srtt_us >> 3), ca->curr_rtt, ca->delay_min, una, tp->lost,
-		ca->round_start, tp->suss_state, ca->suss_blue_cnt, ca->suss_round_no);
-/* suss end block	*/
 
 	if (!tcp_is_cwnd_limited(sk))
 		return;
@@ -515,7 +338,7 @@ static void cubictcp_cong_avoid(struct sock *sk, u32 ack, u32 acked)
 	tcp_cong_avoid_ai(tp, ca->cnt, acked);
 }
 
-static u32 cubictcp_recalc_ssthresh(struct sock *sk)
+__bpf_kfunc static u32 cubictcp_recalc_ssthresh(struct sock *sk)
 {
 	const struct tcp_sock *tp = tcp_sk(sk);
 	struct bictcp *ca = inet_csk_ca(sk);
@@ -532,7 +355,7 @@ static u32 cubictcp_recalc_ssthresh(struct sock *sk)
 	return max((tcp_snd_cwnd(tp) * beta) / BICTCP_BETA_SCALE, 2U);
 }
 
-static void cubictcp_state(struct sock *sk, u8 new_state)
+__bpf_kfunc static void cubictcp_state(struct sock *sk, u8 new_state)
 {
 	if (new_state == TCP_CA_Loss) {
 		bictcp_reset(inet_csk_ca(sk));
@@ -571,36 +394,6 @@ static void hystart_update(struct sock *sk, u32 delay)
 
 	if (hystart_detect & HYSTART_ACK_TRAIN) {
 		u32 now = bictcp_clock_us(sk);
-/* suss start block	*/
-	if(ca->suss_flag == 1 && tp->snd_cwnd > ca->suss_cap)
-	{
-	    ca->found = 1;
-	    printk(KERN_INFO "SUSSmsg id=%u Stop exponential growth (type=3): t=%llu Sport=%u cap=%u ssthresh=%u c=%u i=%u", tp->suss_msg_id, now, inet_sk(sk)->inet_sport, ca->suss_cap, tp->snd_ssthresh, tp->snd_cwnd, tcp_packets_in_flight(tp));
-	    tp->suss_state = 3;
-	    if(ca->suss_num_of_jump > 1)
-		tp->snd_cwnd = tcp_packets_in_flight(tp);
-	    tp->snd_ssthresh = tp->snd_cwnd;
-	    return;
-	}
-	if(ca->suss_flag == 0 && tp->suss_state < 3 && ca->suss_is_blue != 0)
-	{
-	    if ((s32)(now - ca->last_ack) <= hystart_ack_delta_us)
-	    {
-		ca->last_ack = now;
-		threshold = ca->delay_min + hystart_ack_delay(sk);
-		threshold >>= 1;
-		u32 temp = (now - ca->round_start) << ca->suss_num_of_jump;
-		if (temp > threshold)
-		    {
-			ca->suss_flag = 1;
-			ca->suss_cap = tp->snd_cwnd + (ca->suss_blue_cnt * ((1 << ca->suss_num_of_jump) - 1));
-			printk(KERN_INFO "SUSSmsg id=%u Cap is set: t=%llu Sport=%u cap=%u ssthresh=%u c=%u i=%u", tp->suss_msg_id, now, inet_sk(sk)->inet_sport, ca->suss_cap, tp->snd_ssthresh, tp->snd_cwnd, tcp_packets_in_flight(tp));                        
-		    }
-	    }
-	}
-	if(tp->suss_state == 10)
-//-------------------------------------------------
-/* suss end block	*/
 
 		/* first detection parameter - ack-train detection */
 		if ((s32)(now - ca->last_ack) <= hystart_ack_delta_us) {
@@ -618,10 +411,6 @@ static void hystart_update(struct sock *sk, u32 delay)
 
 			if ((s32)(now - ca->round_start) > threshold) {
 				ca->found = 1;
-/* suss start block	*/
-	printk(KERN_INFO "SUSSmsg id=%u Stop exponential growth (type=1): t=%llu Sport=%u roundStart=%u ssthresh=%u c=%u i=%u", tp->suss_msg_id, now, inet_sk(sk)->inet_sport, ca->round_start, tp->snd_ssthresh, tp->snd_cwnd, tcp_packets_in_flight(tp));
-	if(tp->suss_state < 9)  tp->suss_state = 3; //SUSS_Flg14
-/* suss end block	*/
 				pr_debug("hystart_ack_train (%u > %u) delay_min %u (+ ack_delay %u) cwnd %u\n",
 					 now - ca->round_start, threshold,
 					 ca->delay_min, hystart_ack_delay(sk), tcp_snd_cwnd(tp));
@@ -645,17 +434,6 @@ static void hystart_update(struct sock *sk, u32 delay)
 			if (ca->curr_rtt > ca->delay_min +
 			    HYSTART_DELAY_THRESH(ca->delay_min >> 3)) {
 				ca->found = 1;
-/* suss start block	*/
-	u32 now = bictcp_clock_us(sk);
-	printk(KERN_INFO "SUSSmsg id=%u Stop exponential growth (type=2): t=%llu Sport=%u roundStart=%u ssthresh=%u c=%u i=%u", tp->suss_msg_id, now, inet_sk(sk)->inet_sport, ca->round_start, tp->snd_ssthresh, tp->snd_cwnd, tcp_packets_in_flight(tp));
-	if(tp->suss_state < 9)
-	{
-	    tp->suss_state = 4;
-	    if(ca->suss_num_of_jump > 1)
-		tp->snd_cwnd = tcp_packets_in_flight(tp);
-	}
-/* suss end block	*/
-
 				NET_INC_STATS(sock_net(sk),
 					      LINUX_MIB_TCPHYSTARTDELAYDETECT);
 				NET_ADD_STATS(sock_net(sk),
@@ -667,7 +445,7 @@ static void hystart_update(struct sock *sk, u32 delay)
 	}
 }
 
-static void cubictcp_acked(struct sock *sk, const struct ack_sample *sample)
+__bpf_kfunc static void cubictcp_acked(struct sock *sk, const struct ack_sample *sample)
 {
 	const struct tcp_sock *tp = tcp_sk(sk);
 	struct bictcp *ca = inet_csk_ca(sk);
@@ -687,10 +465,7 @@ static void cubictcp_acked(struct sock *sk, const struct ack_sample *sample)
 
 	/* first time call or link delay decreases */
 	if (ca->delay_min == 0 || ca->delay_min > delay)
-	{	/* suss line	*/
 		ca->delay_min = delay;
-                ca->suss_r_minupdate = ca->suss_round_no;	/* suss line	*/
-	}	/* suss line	*/
 
 	/* hystart triggers when cwnd is larger than some threshold */
 	if (!ca->found && tcp_in_slow_start(tp) && hystart &&
@@ -710,22 +485,22 @@ static struct tcp_congestion_ops cubictcp __read_mostly = {
 	.name		= "cubic",
 };
 
-BTF_SET_START(tcp_cubic_check_kfunc_ids)
+BTF_SET8_START(tcp_cubic_check_kfunc_ids)
 #ifdef CONFIG_X86
 #ifdef CONFIG_DYNAMIC_FTRACE
-BTF_ID(func, cubictcp_init)
-BTF_ID(func, cubictcp_recalc_ssthresh)
-BTF_ID(func, cubictcp_cong_avoid)
-BTF_ID(func, cubictcp_state)
-BTF_ID(func, cubictcp_cwnd_event)
-BTF_ID(func, cubictcp_acked)
+BTF_ID_FLAGS(func, cubictcp_init)
+BTF_ID_FLAGS(func, cubictcp_recalc_ssthresh)
+BTF_ID_FLAGS(func, cubictcp_cong_avoid)
+BTF_ID_FLAGS(func, cubictcp_state)
+BTF_ID_FLAGS(func, cubictcp_cwnd_event)
+BTF_ID_FLAGS(func, cubictcp_acked)
 #endif
 #endif
-BTF_SET_END(tcp_cubic_check_kfunc_ids)
+BTF_SET8_END(tcp_cubic_check_kfunc_ids)
 
 static const struct btf_kfunc_id_set tcp_cubic_kfunc_set = {
-	.owner     = THIS_MODULE,
-	.check_set = &tcp_cubic_check_kfunc_ids,
+	.owner = THIS_MODULE,
+	.set   = &tcp_cubic_check_kfunc_ids,
 };
 
 static int __init cubictcp_register(void)
