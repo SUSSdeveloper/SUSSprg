@@ -5,8 +5,9 @@
 1. [Overview](#overview)
 2. [List of Modifications in the Linux Source Code](#list-of-modifications-in-the-linux-source-code)
 3. [Installation Roadmap](#installation-roadmap)
-4. [Contact Us](#contact-us)
-5. [References](#references)
+4. [Working with SUSS](#working-with-suss)
+5. [Contact Us](#contact-us)
+6. [References](#references)
 
 ### Overview
 Welcome to SUSS (Speeding Up Slow Start), an open-source project aimed at tackling the issue of bandwidth under-utilization during the TCP slow-start phase. Our lightweight sender-side add-on, compatible with CUBIC [1] and implemented in Linux kernel 5.19.10, focuses on reducing flow completion time (FCT), a vital performance metric for the Internet end-users [2].
@@ -34,64 +35,66 @@ The simple installation process involves the following steps:
 
 2. Update the local package index and Install necessary build tools:
    <pre>
-	   sudo apt-get update
-	   sudo apt-get install -y build-essential  libncurses-dev  libssl-dev  make  gcc  gawk  flex  bison  openssl  dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf  llvm zstd dwarves
+   sudo apt-get update
+   sudo apt-get install -y build-essential  libncurses-dev  libssl-dev  make  gcc  gawk  flex  bison  openssl  dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf  llvm zstd dwarves
    </pre>
 
 3. Install the Linux source package from the repository, then navigate to the source directory and extract the files.
    <pre>
-	   sudo apt-get install linux-source-6.8.0
-	   cd /usr/src
-	   sudo tar -xvf linux-source-6.8.0.tar.bz2
+   sudo apt-get install linux-source-6.8.0
+   cd /usr/src
+   sudo tar -xvf linux-source-6.8.0.tar.bz2
    </pre>
 
 4. Copy the current kernel configuration file from the boot directory to the extracted directory, renaming it as `.config'. This step ensures that the existing kernel settings are preserved and used as a baseline for further configuration. 
    <pre>
-	   cd /usr/src/linux-source-6.8.0/
-	   sudo cp /boot/config-$(uname -r) .config
-	   sudo make oldconfig
+   cd /usr/src/linux-source-6.8.0/
+   sudo cp /boot/config-$(uname -r) .config
+   sudo make oldconfig
    </pre>
 
 5. Open the `.config` file with a text editor and find keys of CONFIG_SYSTEM_TRUSTED_KEYS and CONFIG_SYSTEM_REVOCATION_KEYS and empty their values.
 
 
 6. Prior to compiling the kernel, download the `sourceCode' directory from the project and replace the corresponding files with the modified ones. In this example, run:
-      <pre>
-	   sudo cp  sourceCode/linux-6.8/suss/tcp_cubic.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_cubic.c
-	   sudo cp  sourceCode/linux-6.8/suss/tcp_input.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_input.c
-	   sudo cp  sourceCode/linux-6.8/suss/tcp_output.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_output.c
-	   sudo cp  sourceCode/linux-6.8/suss/tcp_cong.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_cong.c
-	   sudo cp  sourceCode/linux-6.8/suss/tcp.h		/usr/src/linux-source-6.8.0/include/linux/tcp.h
+   <pre>
+   sudo cp  sourceCode/linux-6.8/suss/tcp_cubic.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_cubic.c
+   sudo cp  sourceCode/linux-6.8/suss/tcp_input.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_input.c
+   sudo cp  sourceCode/linux-6.8/suss/tcp_output.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_output.c
+   sudo cp  sourceCode/linux-6.8/suss/tcp_cong.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_cong.c
+   sudo cp  sourceCode/linux-6.8/suss/tcp.h		/usr/src/linux-source-6.8.0/include/linux/tcp.h
    </pre>
       
 7. Compile the kernel:
    <pre>
-	   sudo make -j $(nproc)
+   sudo make -j $(nproc)
    </pre>
    <br>The compilation process may take some time, depending on your system's hardware.
 
 8. After successful compilation, install the new kernel using:
    <pre>
-	   sudo make modules_install -j $(nproc)
-	   sudo make install
+   sudo make modules_install -j $(nproc)
+   sudo make install
    </pre>
    <br>This will install the kernel image, kernel modules, and update the bootloader configuration.
 
 9. Update GRUB Configuration:
    <pre>
-	   sudo update-grub
-
+   sudo update-grub
    </pre>
+
 10. After the installation and GRUB configuration update, reboot your system to use the newly compiled kernel:
    <pre>
-	   sudo reboot
+   sudo reboot
    </pre>
 
 11. To verify a successful installation, confirm that `suss' appears in the output of:
    <pre>
-	   ls /sys/module/tcp_cubic/parameters
+   ls /sys/module/tcp_cubic/parameters
    </pre>
 
+### Working with SUSS
+Please see [usageGuide](./usageGuide).
 
 ### Contact Us
 This section will be updated after the publication of the paper.
