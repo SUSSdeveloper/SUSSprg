@@ -1,0 +1,51 @@
+set terminal postscript eps enhanced color
+set output 'delivered.eps'
+set size 1, 0.75
+unset errorbars
+set style line 1 pt -1 linecolor rgb "red"   linewidth 2
+set style line 2 pt -1 linecolor rgb "brown" linewidth 1        #cwnd
+set style line 3 pt -1 linecolor rgb "dark-pink" linewidth 1
+set style line 4 pt -1 linecolor rgb "purple" linewidth 1       #Prate
+set style line 5 pt -1 linecolor rgb "blue" linewidth 2         #inf
+set style line 6 pt -1 linecolor rgb "grey" linewidth 1         #
+set style line 7 pt -1 linecolor rgb "dark-cyan" linewidth 1    #maxBW
+set style line 8 pt -1 linecolor rgb "orange" linewidth 1
+set style line 9 pt -1 linecolor rgb "black" linewidth 2        #RTT
+set style line 10 pt -1 linecolor rgb "orange" linewidth 1
+set style line 11 pt -1 linecolor rgb "gold" linewidth 1
+set style line 12 pt -1 linecolor rgb "dark-yellow" linewidth 1
+set style line 13 pt -1 linecolor rgb "green" linewidth 1
+set style line 14 pt -1 linecolor rgb "dark-green" linewidth 1  #
+set style line 15 pt -1 linecolor rgb "plum" linewidth 1
+set style line 16 pt -1 linecolor rgb "dark-goldenrod" linewidth 2
+set style line 17 pt -1 linecolor rgb "sienna4" linewidth 1
+set style line 18 pt -1 linecolor rgb "dark-khaki" linewidth 1
+set style line 20 pt -1 linecolor rgb "skyblue" linewidth 2
+set style line 30 pt -1 linecolor rgb "dark-spring-green" linewidth 2
+set style line 31 pt -1 linecolor rgb "dark-magenta" linewidth 2
+
+set boxwidth 0.001
+set style fill solid
+unset colorbox
+set lmargin 8
+set bmargin 4
+
+set ylabel font "Times New Roman,34"
+set ylabel "FCT (s)" offset -0.5,0,0 textcolor 'black'
+set xlabel font "Times New Roman,34"
+set xlabel "Time (s)" offset 0,-0.5,0 textcolor 'black'
+
+set xrange [0:]
+set xtics font ", 24"
+set yrange [0:]
+set ytics font ", 24"
+set key font "Times New Roman,26"
+set key height 1
+set key invert reverse Left
+set key right bottom
+
+#set xtics 20
+set ytics 2
+
+plot	"data.suss1"	using ($4/1000000):($20/1000000) title  'SUSS on' with linespoints axis x1y1 ls 1,\
+	"data.suss0"	using ($4/1000000):($20/1000000) title  'SUSS off' with linespoints axis x1y1 ls 5,\

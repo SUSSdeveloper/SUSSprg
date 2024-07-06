@@ -58,11 +58,11 @@ The simple installation process involves the following steps:
 
 6. Prior to compiling the kernel, download the `sourceCode' directory from the project and replace the corresponding files with the modified ones. In this example, run:
    <pre>
-   sudo cp  sourceCode/linux-6.8/suss/tcp_cubic.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_cubic.c
-   sudo cp  sourceCode/linux-6.8/suss/tcp_input.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_input.c
-   sudo cp  sourceCode/linux-6.8/suss/tcp_output.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_output.c
-   sudo cp  sourceCode/linux-6.8/suss/tcp_cong.c	/usr/src/linux-source-6.8.0/net/ipv4/tcp_cong.c
-   sudo cp  sourceCode/linux-6.8/suss/tcp.h		/usr/src/linux-source-6.8.0/include/linux/tcp.h
+   sudo cp  sourceCode/linux-6.8/suss/tcp_cubic.c   /usr/src/linux-source-6.8.0/net/ipv4/tcp_cubic.c
+   sudo cp  sourceCode/linux-6.8/suss/tcp_input.c   /usr/src/linux-source-6.8.0/net/ipv4/tcp_input.c
+   sudo cp  sourceCode/linux-6.8/suss/tcp_output.c  /usr/src/linux-source-6.8.0/net/ipv4/tcp_output.c
+   sudo cp  sourceCode/linux-6.8/suss/tcp_cong.c    /usr/src/linux-source-6.8.0/net/ipv4/tcp_cong.c
+   sudo cp  sourceCode/linux-6.8/suss/tcp.h         /usr/src/linux-source-6.8.0/include/linux/tcp.h
    </pre>
       
 7. Compile the kernel:
@@ -92,6 +92,7 @@ The simple installation process involves the following steps:
    <pre>
    ls /sys/module/tcp_cubic/parameters
    </pre>
+Please note that the value of the module parameter `suss' indicates whether SUSS is enabled (1) or disabled (0).
 
 ### Working with SUSS
 Please see [usageGuide](./usageGuide).
