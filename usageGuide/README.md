@@ -13,7 +13,9 @@ While SUSS can handle TCP data transfers across a big range of port numbers, we 
    sudo apt-get install -y apache2
 </pre>
 
-Assuming you have a client capable of downloading files from the server, use the following command to download the file `index.html`:
+Assuming you have a client capable of downloading files from the server, use the following command to download the file `index.html`. To avoid any optimizations made by web browsers, download the file using either either `wget` or `curl` from a command line interface.
+We recommend setting up a client-server connection with a round-trip time (RTT) exceeding 50ms and a bottleneck bandwidth greater than 50Mbps, as SUSS provides significant benefits in networks with large Bandwidth-Delay Products (BDP).
+
 <pre>
    wget http://IPaddress_of_the_server/index.html
 </pre>
