@@ -36,7 +36,7 @@ Create a dummy file and move it to the web root directory with these commands:
 
 
 ### Usage Example
-1. By default, SUSS is disabled. To enable it, you must change the value of the SUSS module parameter from 0 to 1.
+1. By default, SUSS is disabled. To enable it, you must change the value of the suss module parameter from 0 to 1.
 
 <pre>
    cat  /sys/module/tcp_cubic/parameters/suss
@@ -58,7 +58,7 @@ Disable SUSS and repeat the previous two steps to gather logs for when SUSS is d
 4. At this point, you should have two files, `raw.suss0` and `raw.suss1`, representing the logs when SUSS is disabled and enabled, respectively.
 If the output of the following command for each raw file indicates a message like "SUSSmsg cubic starts sending data. Follow id=143 for Sport=20480", it suggests that each raw file documents a single download.
 <pre>
-   grep -i starts raw.suss?
+   grep "SUSSmsg cubic starts sending data" raw.suss?
 </pre> 
 
 5. Each download is identified by its id. Use the bash script `extract.sh` located [here](./example) to prepare the files `data.suss0` and `data.suss1`, which will be used for plotting:
@@ -68,7 +68,7 @@ If the output of the following command for each raw file indicates a message lik
 </pre>
 
 6. At this stage, you should have two data files, `data.suss0` and `data.suss1`, in your working directory.
-Using the provided Gnuplot script `delivered.tr`, located [here](./example), generate a plot that compares the total data delivered over time in both the enabled and disabled scenarios.
+Using the provided Gnuplot script `delivered.tr`, located [here](./example), generate a plot that compares the total data delivered over time in both the enabled and disabled tested scenarios.
 <pre>
    gnuplot delivered.tr
    xdg-open delivered.eps
