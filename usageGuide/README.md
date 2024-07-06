@@ -7,7 +7,7 @@
 ### Introduction
 
 This tutorial provides an introduction to SUSS and demonstrates its application through a practical example.
-While SUSS can handle TCP data transfers across any port number, we will focus on port 80 for this tutorial, utilizing the Apache2 web server. Please install Apache2 on the server where SUSS is already installed.
+While SUSS can handle TCP data transfers across a big range of port numbers, we will focus on port 80 for this tutorial, utilizing the Apache2 web server. Please install Apache2 on the server where SUSS is already installed.
 
 <pre>
    sudo apt-get install -y apache2
@@ -67,7 +67,8 @@ If the output of the following command for each raw file indicates a message lik
    bash extract.sh raw.suss1
 </pre>
 
-6. At this stage, you should have two data files, `data.suss0` and `data.suss1`, in your working directory. Execute the following command to generate and display a plot that compares the total data delivered over time in both enabled and disabled scenarios:
+6. At this stage, you should have two data files, `data.suss0` and `data.suss1`, in your working directory.
+Using the provided Gnuplot script `delivered.tr`, located [here](./example), generate a plot that compares the total data delivered over time in both the enabled and disabled scenarios.
 <pre>
    gnuplot delivered.tr
    xdg-open delivered.eps

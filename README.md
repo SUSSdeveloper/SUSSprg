@@ -87,6 +87,7 @@ The simple installation process involves the following steps:
    <pre>
    sudo reboot
    </pre>
+If the server fails to boot with the new kernel, enter the BIOS settings and disable the Secure Boot option.
 
 11. To verify a successful installation, confirm that `suss' appears in the output of:
    <pre>
