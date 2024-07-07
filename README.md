@@ -36,7 +36,9 @@ The simple installation process involves the following steps:
 2. Update the local package index and Install necessary build tools:
    <pre>
    sudo apt-get update
-   sudo apt-get install -y build-essential  libncurses-dev  libssl-dev  make  gcc  gawk  flex  bison  openssl  dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf  llvm zstd dwarves
+   sudo apt-get install -y build-essential libncurses-dev libssl-dev make gcc gawk flex  \
+			   openssl dkms libelf-dev libudev-dev  libpci-dev libiberty-dev \
+			   bison autoconf llvm zstd dwarves llvm
    </pre>
 
 3. Install the Linux source package from the repository, then navigate to the source directory and extract the files.
@@ -46,7 +48,7 @@ The simple installation process involves the following steps:
    sudo tar -xvf linux-source-6.8.0.tar.bz2
    </pre>
 
-4. Copy the current kernel configuration file from the boot directory to the extracted directory, renaming it as `.config'. This step ensures that the existing kernel settings are preserved and used as a baseline for further configuration. 
+4. Copy the current kernel configuration file from the boot directory to the extracted directory, renaming it as `.config`. This step ensures that the existing kernel settings are preserved and used as a baseline for further configuration. 
    <pre>
    cd /usr/src/linux-source-6.8.0/
    sudo cp /boot/config-$(uname -r) .config
@@ -56,7 +58,7 @@ The simple installation process involves the following steps:
 5. Open the `.config` file with a text editor and find keys of CONFIG_SYSTEM_TRUSTED_KEYS and CONFIG_SYSTEM_REVOCATION_KEYS and empty their values.
 
 
-6. Prior to compiling the kernel, download the `sourceCode' directory from the project and replace the corresponding files with the modified ones. In this example, run:
+6. Prior to compiling the kernel, download the `sourceCode` directory from the project and replace the corresponding files with the modified ones. In this example, run:
    <pre>
    sudo cp  sourceCode/linux-6.8/suss/tcp_cubic.c   /usr/src/linux-source-6.8.0/net/ipv4/tcp_cubic.c
    sudo cp  sourceCode/linux-6.8/suss/tcp_input.c   /usr/src/linux-source-6.8.0/net/ipv4/tcp_input.c
@@ -89,7 +91,7 @@ The simple installation process involves the following steps:
    </pre>
 If the server fails to boot with the new kernel, enter the BIOS settings and disable the Secure Boot option.
 
-11. To verify a successful installation, confirm that `suss' appears in the output of:
+11. To verify a successful installation, confirm that `suss` appears in the output of:
    <pre>
    ls /sys/module/tcp_cubic/parameters
    </pre>
