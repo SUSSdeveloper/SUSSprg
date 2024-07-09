@@ -25,7 +25,7 @@ These changes are as follows:
 - d) In the file `tcp_input.c`, which deals with incoming acknowledgments (ACKs), SUSS adds a few lines of code.
 - e) To assign a random ID for each test, a few lines of code have been added to the file `tcp_cong.c`.
 
-You can identify SUSS's specific modifications in the Linux source code by searching for the "/* suss" comments in the files located in the `sourceCode/linux-VER/suss` directory.
+You can identify SUSS's specific modifications in the Linux source code by searching for the "`/* suss`" comments in the files located in the `sourceCode/linux-VER/suss` directory.
 
 
 ### Installation Roadmap
@@ -55,7 +55,7 @@ The simple installation process involves the following steps:
    sudo make oldconfig
    </pre>
 
-5. Open the `.config` file with a text editor and find keys of CONFIG_SYSTEM_TRUSTED_KEYS and CONFIG_SYSTEM_REVOCATION_KEYS and empty their values.
+5. Open the `.config` file with a text editor and find keys of `CONFIG_SYSTEM_TRUSTED_KEYS` and `CONFIG_SYSTEM_REVOCATION_KEYS` and empty their values.
 
 
 6. Prior to compiling the kernel, download the `sourceCode` directory from the project and replace the corresponding files with the modified ones. In this example, run:
@@ -95,7 +95,7 @@ If the server fails to boot with the new kernel, enter the BIOS settings and dis
    <pre>
    ls /sys/module/tcp_cubic/parameters
    </pre>
-Please note that the value of the module parameter `suss' indicates whether SUSS is enabled (1) or disabled (0).
+Please note that the value of the module parameter `suss` indicates whether SUSS is enabled (`1`) or disabled (`0`).
 
 ### Working with SUSS
 Please see [usageGuide](./usageGuide).
