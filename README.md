@@ -29,11 +29,11 @@ You can identify SUSS's specific modifications in the Linux source code by searc
 
 
 ### Installation Roadmap
-SUSS is currently implemented in Linux kernel 5.19.10 and 6.8.4. We recomend using a Debian-based Linux distribution like Ubuntu. Since SUSS is a server-side approach, no changes need to be applied at the client side.
+SUSS is currently implemented in Linux kernel 5.19.10 and 6.8.4. We recommend using a Debian-based Linux distribution: we have been using Ubuntu. Since SUSS is a server-side approach, no changes need to be applied at the client side.
 The simple installation process involves the following steps:
 1. Prepare a Linux server. We recommend Ubuntu Server 24.04 LTS; you can download the ISO file from [here](https://ubuntu.com/download/server/thank-you?version=24.04&architecture=amd64&lts=true).
 
-2. Update the local package index and Install necessary build tools:
+2. Update the local package index and install necessary build tools:
    <pre>
    sudo apt-get update
    sudo apt-get install -y build-essential libncurses-dev libssl-dev make gcc gawk flex  \
