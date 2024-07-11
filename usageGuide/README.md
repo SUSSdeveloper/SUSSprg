@@ -38,11 +38,12 @@ Create a dummy file and move it to the web root directory with these commands:
 
 
 ### Usage Example
-1. By default, SUSS is disabled. To enable it, you must change the value of the suss module parameter from 0 to 1.
+1. By default, SUSS is disabled. To enable it, you must change the value of the suss module parameter from 0 to 1, and set the TCP congestion control algorithm to Cubic.
 
 <pre>
    cat  /sys/module/tcp_cubic/parameters/suss
    echo 1 | sudo tee /sys/module/tcp_cubic/parameters/suss
+   sudo sysctl net.ipv4.tcp_congestion_control=cubic
 </pre>
 
 2. To prevent previous logs from interfering with the current test, clear the contents of `/var/log/kern.log`:
