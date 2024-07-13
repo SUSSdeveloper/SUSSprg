@@ -51,7 +51,7 @@ Create a dummy file and move it to the web root directory with these commands:
    sudo sh -c '> /var/log/kern.log'
 </pre>
 
-3. On the client, download the dummy file from the server. Then, on the server, copy the logs into a file:
+3. Using either `wget` or `curl` on the client, download the dummy file from the server. After a few minutes, copy the logs into a file on the server:
 <pre> 
    cat /var/log/kern.log > raw.suss1
 </pre>
