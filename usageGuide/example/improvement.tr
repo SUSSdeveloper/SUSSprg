@@ -1,7 +1,7 @@
 set terminal postscript eps enhanced color
 set output 'improvement.eps'
 set size 1, 0.75
-unset errorbars
+#unset errorbars
 set style line 1 pt -1 linecolor rgb "red"   linewidth 2
 set style line 2 pt -1 linecolor rgb "brown" linewidth 1        #cwnd
 set style line 3 pt -1 linecolor rgb "dark-pink" linewidth 1
