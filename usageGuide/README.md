@@ -76,3 +76,10 @@ Using the provided Gnuplot script `delivered.tr`, located [here](./example), gen
    gnuplot delivered.tr
    xdg-open delivered.eps
 </pre>
+
+7. To also plot the improvement curve, execute the following commands:
+<pre>
+   bash improvement.sh
+   gnuplot improvement.tr
+   xdg-open improvement.eps
+</pre>

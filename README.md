@@ -4,14 +4,14 @@
 ## Table of Contents
 1. [Overview](#overview)
 2. [List of Modifications in the Linux Source Code](#list-of-modifications-in-the-linux-source-code)
-3. [Installation Roadmap](#installation-roadmap)
+3. [Installation Guide](#installation-guide)
 4. [Working with SUSS](#working-with-suss)
 5. [Contact Us](#contact-us)
 6. [References](#references)
 
 ### Overview
 Welcome to SUSS (Speeding Up Slow Start), an open-source project aimed at tackling the issue of bandwidth under-utilization during the TCP slow-start phase. Our lightweight sender-side add-on, compatible with CUBIC [1] and implemented in Linux kernel 5.19.10, focuses on reducing flow completion time (FCT), a vital performance metric for the Internet end-users [2].
-With SUSS, users simply need to apply the changes to the Linux kernel's source code and recompile it for seamless integration. This README includes an installation roadmap and excerpts from a more comprehensive academic paper that delve into detailed information about SUSS, covering its theory and performance analysis. For the full in-depth analysis, please refer to the academic paper available at [will_be_published](http://will_be_published/).
+With SUSS, users simply need to apply the changes to the Linux kernel's source code and recompile it for seamless integration. This README includes an installation guide and excerpts from a more comprehensive academic paper that delve into detailed information about SUSS, covering its theory and performance analysis. For the full in-depth analysis, please refer to the academic paper available at [will_be_published](http://will_be_published/).
 We value community contributions and will share the contributing guidelines shortly. Join us in optimizing TCP connections for faster, more efficient data transfer.
 
 
@@ -28,7 +28,7 @@ These changes are as follows:
 You can identify SUSS's specific modifications in the Linux source code by searching for the "`/* suss`" comments in the files located in the `sourceCode/linux-VER/suss` directory.
 
 
-### Installation Roadmap
+### Installation Guide
 SUSS is currently implemented in Linux kernel 5.19.10 and 6.8.4. We recommend using a Debian-based Linux distribution: we have been using Ubuntu. Since SUSS is a server-side approach, no changes need to be applied at the client side.
 The simple installation process involves the following steps:
 1. Prepare a Linux server. We recommend Ubuntu Server 24.04 LTS; you can download the ISO file from [here](https://ubuntu.com/download/server/thank-you?version=24.04&architecture=amd64&lts=true).
