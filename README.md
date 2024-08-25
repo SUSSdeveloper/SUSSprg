@@ -55,7 +55,7 @@ The simple installation process involves the following steps:
    sudo make oldconfig
    </pre>
 
-5. Open the `.config` file with a text editor and find keys of `CONFIG_SYSTEM_TRUSTED_KEYS` and `CONFIG_SYSTEM_REVOCATION_KEYS` and empty their values.
+5. Open the `.config` file located at `/usr/src/linux-source-6.8.0` with a text editor and find keys of `CONFIG_SYSTEM_TRUSTED_KEYS` and `CONFIG_SYSTEM_REVOCATION_KEYS` and empty their values.
 
 
 6. Prior to compiling the kernel, download the `sourceCode` directory from the project and replace the corresponding files with the modified ones. In this example, run:
@@ -69,6 +69,7 @@ The simple installation process involves the following steps:
       
 7. Compile the kernel:
    <pre>
+   cd /usr/src/linux-source-6.8.0/
    sudo make -j $(nproc)
    </pre>
    <br>The compilation process may take some time, depending on your system's hardware.
