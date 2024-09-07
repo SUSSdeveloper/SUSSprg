@@ -11,7 +11,7 @@
 
 ### Overview
 Welcome to SUSS (Speeding Up Slow Start), an open-source project aimed at tackling the issue of bandwidth under-utilization during the TCP slow-start phase. Our lightweight sender-side add-on, compatible with CUBIC [1] and implemented in Linux kernel 5.19.10, focuses on reducing flow completion time (FCT), a vital performance metric for the Internet end-users [2].
-With SUSS, users simply need to apply the changes to the Linux kernel's source code and recompile it for seamless integration. This README includes an installation guide and excerpts from a more comprehensive academic paper that delve into detailed information about SUSS, covering its theory and performance analysis. For the full in-depth analysis, please refer to the academic paper available at [will_be_published](http://will_be_published/).
+With SUSS, users simply need to apply the changes to the Linux kernel's source code and recompile it for seamless integration. This README provides an installation guide and excerpts from our paper, _SUSS: Improving TCP Performance by Speeding Up Slow-Start_, published in SIGCOMM 2024. For a comprehensive understanding of SUSS, including its theoretical foundation and performance evaluation, please refer to the [paper](./SUSS_SIGCOMM2024.pdf).
 We value community contributions and will share the contributing guidelines shortly. Join us in optimizing TCP connections for faster, more efficient data transfer.
 
 
