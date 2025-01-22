@@ -31,19 +31,19 @@ You can identify SUSS's specific modifications in the Linux source code by searc
 ### Installation Guide
 SUSS is currently implemented in Linux kernel 5.19.10 and 6.8.4. We recommend using a Debian-based Linux distribution: we have been using Ubuntu. Since SUSS is a server-side approach, no changes need to be applied at the client side.
 The simple installation process involves the following steps:
-1. Prepare a Linux server. We recommend Ubuntu Server 24.04 LTS; you can download the ISO file from [here](https://ubuntu.com/download/server/thank-you?version=24.04&architecture=amd64&lts=true).
+1. Prepare a Linux server. We recommend Ubuntu Server 24.04 LTS; you can download the ISO file from [here](https://old-releases.ubuntu.com/releases/24.04/ubuntu-24.04-live-server-amd64.iso).
 
 2. Update the local package index and install necessary build tools:
    <pre>
    sudo apt-get update
    sudo apt-get install -y build-essential libncurses-dev libssl-dev make gcc gawk flex  \
 			   openssl dkms libelf-dev libudev-dev  libpci-dev libiberty-dev \
-			   bison autoconf llvm zstd dwarves llvm
+			   bison autoconf llvm zstd dwarves
    </pre>
 
 3. Install the Linux source package from the repository, then navigate to the source directory and extract the files.
    <pre>
-   sudo apt-get install linux-source-6.8.0
+   sudo apt-get install linux-source-6.8.0=6.8.0-51.52
    cd /usr/src
    sudo tar -xvf linux-source-6.8.0.tar.bz2
    </pre>
