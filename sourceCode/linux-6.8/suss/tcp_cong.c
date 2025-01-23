@@ -17,7 +17,7 @@
 #include <linux/jhash.h>
 #include <net/tcp.h>
 #include <trace/events/tcp.h>
-#include <linux/random.h> /*	SUSS line	*/
+#include <linux/random.h> /*	SUSS line - B1	*/
 
 static DEFINE_SPINLOCK(tcp_cong_list_lock);
 static LIST_HEAD(tcp_cong_list);
@@ -47,8 +47,7 @@ void tcp_set_ca_state(struct sock *sk, const u8 ca_state)
 }
 
 /* Must be called with rcu lock held */
-static struct tcp_congestion_ops *tcp_ca_find_autoload(struct net *net,
-						       const char *name)
+static struct tcp_congestion_ops *tcp_ca_find_autoload(const char *name)
 {
 	struct tcp_congestion_ops *ca = tcp_ca_find(name);
 
@@ -183,7 +182,7 @@ int tcp_update_congestion_control(struct tcp_congestion_ops *ca, struct tcp_cong
 	return ret;
 }
 
-u32 tcp_ca_get_key_by_name(struct net *net, const char *name, bool *ecn_ca)
+u32 tcp_ca_get_key_by_name(const char *name, bool *ecn_ca)
 {
 	const struct tcp_congestion_ops *ca;
 	u32 key = TCP_CA_UNSPEC;
@@ -191,7 +190,7 @@ u32 tcp_ca_get_key_by_name(struct net *net, const char *name, bool *ecn_ca)
 	might_sleep();
 
 	rcu_read_lock();
-	ca = tcp_ca_find_autoload(net, name);
+	ca = tcp_ca_find_autoload(name);
 	if (ca) {
 		key = ca->key;
 		*ecn_ca = ca->flags & TCP_CONG_NEEDS_ECN;
@@ -241,12 +240,12 @@ void tcp_init_congestion_control(struct sock *sk)
 {
 	struct inet_connection_sock *icsk = inet_csk(sk);
 
-	/* suss start block	*/
+	/* suss start block - B2	*/
 	struct tcp_sock *tp = tcp_sk(sk);
 	get_random_bytes(&tp->suss_msg_id, sizeof(tp->suss_msg_id));
 	printk(KERN_INFO "SUSSmsg %s starts sending data. Follow id=%u for Sport=%u", icsk->icsk_ca_ops->name, tp->suss_msg_id, inet_sk(sk)->inet_sport);
 	tp->snd_isn = tp->snd_una;
-	/* suss end block	*/
+	/* suss end block		*/
 
 	tcp_sk(sk)->prior_ssthresh = 0;
 	if (icsk->icsk_ca_ops->init)
@@ -295,7 +294,7 @@ int tcp_set_default_congestion_control(struct net *net, const char *name)
 	int ret;
 
 	rcu_read_lock();
-	ca = tcp_ca_find_autoload(net, name);
+	ca = tcp_ca_find_autoload(name);
 	if (!ca) {
 		ret = -ENOENT;
 	} else if (!bpf_try_module_get(ca, ca->owner)) {
@@ -433,7 +432,7 @@ int tcp_set_congestion_control(struct sock *sk, const char *name, bool load,
 	if (!load)
 		ca = tcp_ca_find(name);
 	else
-		ca = tcp_ca_find_autoload(sock_net(sk), name);
+		ca = tcp_ca_find_autoload(name);
 
 	/* No change asking for existing value */
 	if (ca == icsk->icsk_ca_ops) {

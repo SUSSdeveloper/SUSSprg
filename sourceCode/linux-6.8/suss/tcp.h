@@ -403,16 +403,15 @@ struct tcp_sock {
 	u32	prr_delivered;	/* Number of newly delivered packets to
 				 * receiver in Recovery. */
 
-	/* suss start block	*/
-	u8	suss_state	:4,	// This flag indicates the current state in which SUSS is operating.
-		suss_nwin	:3,	// Size of k (refer to Appendix A in the paper)
-		suss_unused	:1;
-	u32	suss_limit;		// Maximum of cwnd in the current RTT (see Fig. 7 in the paper)
-	u64	suss_pacing_start_ns;	// Starting time of the pacing period
-	u64	suss_rate;		// Sending rate in the pacing period
-	u32	snd_isn;		// Initial sequence number (is used for monitoring)
-	u8	suss_msg_id;		// Message id (is used for monitoring)
-	/* suss end	block	*/
+	/* suss start block     */
+	u8      suss_state      :4,     // This flag indicates the current state in which SUSS is operating.
+		suss_unused     :4;
+	u32	suss_limit;             // Maximum of cwnd in the current RTT (see Fig. 7 in the paper)
+	u64	suss_pacing_start_ns;   // Starting time of the pacing period
+	u64	suss_rate;              // Sending rate in the pacing period
+	u32	snd_isn;                // Initial sequence number (is used for monitoring)
+	u8	suss_msg_id;            // Message id (is used for monitoring)
+	/* suss end     block   */
 
 	struct hrtimer	pacing_timer;
 	struct hrtimer	compressed_ack_timer;

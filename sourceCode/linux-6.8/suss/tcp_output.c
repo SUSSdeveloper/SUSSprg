@@ -203,16 +203,17 @@ static inline void tcp_event_ack_sent(struct sock *sk, u32 rcv_nxt)
  * This MUST be enforced by all callers.
  */
 void tcp_select_initial_window(const struct sock *sk, int __space, __u32 mss,
-			       __u32 *rcv_wnd, __u32 *window_clamp,
+			       __u32 *rcv_wnd, __u32 *__window_clamp,
 			       int wscale_ok, __u8 *rcv_wscale,
 			       __u32 init_rcv_wnd)
 {
 	unsigned int space = (__space < 0 ? 0 : __space);
+	u32 window_clamp = READ_ONCE(*__window_clamp);
 
 	/* If no clamp set the clamp to the max possible scaled window */
-	if (*window_clamp == 0)
-		(*window_clamp) = (U16_MAX << TCP_MAX_WSCALE);
-	space = min(*window_clamp, space);
+	if (window_clamp == 0)
+		window_clamp = (U16_MAX << TCP_MAX_WSCALE);
+	space = min(window_clamp, space);
 
 	/* Quantize space offering to a multiple of mss if possible. */
 	if (space > mss)
@@ -239,12 +240,13 @@ void tcp_select_initial_window(const struct sock *sk, int __space, __u32 mss,
 		/* Set window scaling on max possible window */
 		space = max_t(u32, space, READ_ONCE(sock_net(sk)->ipv4.sysctl_tcp_rmem[2]));
 		space = max_t(u32, space, READ_ONCE(sysctl_rmem_max));
-		space = min_t(u32, space, *window_clamp);
+		space = min_t(u32, space, window_clamp);
 		*rcv_wscale = clamp_t(int, ilog2(space) - 15,
 				      0, TCP_MAX_WSCALE);
 	}
 	/* Set the clamp no higher than max representable value */
-	(*window_clamp) = min_t(__u32, U16_MAX << (*rcv_wscale), *window_clamp);
+	WRITE_ONCE(*__window_clamp,
+		   min_t(__u32, U16_MAX << (*rcv_wscale), window_clamp));
 }
 EXPORT_SYMBOL(tcp_select_initial_window);
 
@@ -1261,20 +1263,21 @@ static void tcp_update_skb_after_send(struct sock *sk, struct sk_buff *skb,
 		}
 	}
 	list_move_tail(&skb->tcp_tsorted_anchor, &tp->tsorted_sent_queue);
-/* suss start block     */
-        if((tp->snd_cwnd < tp->suss_limit) && (tp->suss_state == 2) &&
-        (tp->snd_cwnd <= (tcp_packets_in_flight(tp)+tcp_skb_pcount(skb))))      //sometime sending is delayed in Ack clocking mode (e.g., because of small queue check)
-        {
+/* suss start block - D1	*/
+	if((tp->snd_cwnd < tp->suss_limit) && (tp->suss_state == 2) &&
+	(tp->snd_cwnd <= (tcp_packets_in_flight(tp)+tcp_skb_pcount(skb))))//sometime sending is delayed in Ack clocking mode (e.g., because of small queue check)
+	{
             tp->snd_cwnd  = tp->snd_cwnd + 2;
-            if (sk->sk_pacing_status == SK_PACING_NONE)
-            {
-                printk(KERN_INFO "SUSSmsg id=%u Switch to pacing mode. t=%llu Sport=%u c=%u i=%u", tp->suss_msg_id, tp->tcp_mstamp, inet_sk(sk)->inet_sport, tp->snd_cwnd, tcp_packets_in_flight(tp));
-                cmpxchg(&sk->sk_pacing_status, SK_PACING_NONE, SK_PACING_NEEDED);       //swtich to pacing mode
-                sk->sk_pacing_rate = tp->suss_rate;
-                tp->tcp_wstamp_ns = tp->suss_pacing_start_ns;
-            }
-        }
-/* suss end block       */
+	    if (sk->sk_pacing_status == SK_PACING_NONE)
+	    {
+		printk(KERN_INFO "SUSSmsg id=%u Switch to pacing mode. t=%llu Sport=%u c=%u i=%u",
+		 tp->suss_msg_id, tp->tcp_mstamp, inet_sk(sk)->inet_sport, tp->snd_cwnd, tcp_packets_in_flight(tp));
+		cmpxchg(&sk->sk_pacing_status, SK_PACING_NONE, SK_PACING_NEEDED);       //swtich to pacing mode
+		sk->sk_pacing_rate = tp->suss_rate;
+		tp->tcp_wstamp_ns = tp->suss_pacing_start_ns;
+	    }
+	}
+/* suss end block - D1		*/
 }
 
 INDIRECT_CALLABLE_DECLARE(int ip_queue_xmit(struct sock *sk, struct sk_buff *skb, struct flowi *fl));
@@ -2777,7 +2780,7 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
 			if (!push_one &&
 			    tcp_tso_should_defer(sk, skb, &is_cwnd_limited,
 						 &is_rwnd_limited, max_segs))
-                            if(!(inet_sk(sk)->inet_sport == 20480 && tp->suss_state == 2))      /* suss line    */
+			    if(!(inet_sk(sk)->inet_sport == 20480 && tp->suss_state == 2))	/* suss line - D2	*/
 				break;
 		}
 
@@ -3578,7 +3581,9 @@ void tcp_send_fin(struct sock *sk)
 			return;
 		}
 	} else {
-		skb = alloc_skb_fclone(MAX_TCP_HEADER, sk->sk_allocation);
+		skb = alloc_skb_fclone(MAX_TCP_HEADER,
+				       sk_gfp_mask(sk, GFP_ATOMIC |
+						       __GFP_NOWARN));
 		if (unlikely(!skb))
 			return;
 
@@ -3870,7 +3875,7 @@ static void tcp_connect_init(struct sock *sk)
 	tcp_ca_dst_init(sk, dst);
 
 	if (!tp->window_clamp)
-		tp->window_clamp = dst_metric(dst, RTAX_WINDOW);
+		WRITE_ONCE(tp->window_clamp, dst_metric(dst, RTAX_WINDOW));
 	tp->advmss = tcp_mss_clamp(tp, dst_metric_advmss(dst));
 
 	tcp_initialize_rcv_mss(sk);
@@ -3878,7 +3883,7 @@ static void tcp_connect_init(struct sock *sk)
 	/* limit the window selection if the user enforce a smaller rx buffer */
 	if (sk->sk_userlocks & SOCK_RCVBUF_LOCK &&
 	    (tp->window_clamp > tcp_full_space(sk) || tp->window_clamp == 0))
-		tp->window_clamp = tcp_full_space(sk);
+		WRITE_ONCE(tp->window_clamp, tcp_full_space(sk));
 
 	rcv_wnd = tcp_rwnd_init_bpf(sk);
 	if (rcv_wnd == 0)
