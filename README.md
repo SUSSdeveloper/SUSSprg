@@ -102,7 +102,7 @@ Please note that the value of the module parameter `suss` indicates whether SUSS
 Please see [usageGuide](./usageGuide).
 
 ### Contact Us
-This section will be updated after the publication of the paper.
+For questions, feedback, or issues related to this project, feel free to reach out to **Mahdi Arghavani** via email: ma.arghavani[at]yahoo.com
 
 ### References
 1. S. Ha, I. Rhee, and L. Xu, “CUBIC: a new TCP-friendly high-speed TCP variant,” ACM SIGOPS operating systems review, vol. 42, no. 5, pp. 64–74, 2008.
