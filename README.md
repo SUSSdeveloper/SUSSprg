@@ -38,7 +38,7 @@ The simple installation process involves the following steps:
    sudo apt-get update
    sudo apt-get install -y build-essential libncurses-dev libssl-dev make gcc gawk flex  \
 			   openssl dkms libelf-dev libudev-dev  libpci-dev libiberty-dev \
-			   bison autoconf llvm zstd dwarves
+			   bison autoconf llvm zstd dwarves bc
    </pre>
 
 3. Install the Linux source package from the repository, then navigate to the source directory and extract the files.
@@ -107,3 +107,4 @@ For questions, feedback, or issues related to this project, feel free to reach o
 ### References
 1. S. Ha, I. Rhee, and L. Xu, “CUBIC: a new TCP-friendly high-speed TCP variant,” ACM SIGOPS operating systems review, vol. 42, no. 5, pp. 64–74, 2008.
 2. N. Dukkipati and N. McKeown, “Why Flow-Completion Time is the Right Metric for Congestion Control,” ACM SIGCOMM Computer Communication Review, vol. 36, no. 1, pp. 59–63, 2006.
+

@@ -58,6 +58,8 @@ Create a dummy file and move it to the web root directory with these commands:
 Use the name `raw.suss1` if SUSS is enabled, and `raw.suss0` if it is disabled. These filenames will be used in subsequent steps to extract useful information.
 Disable SUSS and repeat the previous two steps to gather logs for when SUSS is disabled.
 
+_Note: On newer operating systems, such as Ubuntu 24.04, you may use journalctl to read the kernel logs._
+
 4. As shown in the [example](./example), you should now have two files, `raw.suss0` and `raw.suss1`, representing the logs when SUSS is disabled and enabled, respectively.
 If the output of the following command for each raw file indicates a message like "SUSSmsg cubic starts sending data. Follow id=143 for Sport=20480", it suggests that each raw file documents a single download.
 <pre>
@@ -83,3 +85,4 @@ Using the provided Gnuplot script `delivered.tr`, located [here](./example), gen
    gnuplot improvement.tr
    xdg-open improvement.eps
 </pre>
+
