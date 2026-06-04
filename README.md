@@ -42,8 +42,7 @@ The simple installation process involves the following steps:
    </pre>
 
 3.  After installation, check the currently running kernel version using: `uname -r`
-The expected version is: 6.8.0-51-generic
-This version is required because the modified files in this project are based on Ubuntu kernel version `6.8.0-51.52`.
+The expected version is: 6.8.0-51-generic. This version is required because the modified files in this project are based on Ubuntu kernel version `6.8.0-51.52`.
 
 If your system is running a different kernel version, you can install and boot into `6.8.0-51-generic` using the following commands:
 <pre>
@@ -52,14 +51,16 @@ sudo apt install -y \
   linux-image-6.8.0-51-generic=6.8.0-51.52 \
   linux-modules-6.8.0-51-generic=6.8.0-51.52 \
   linux-modules-extra-6.8.0-51-generic=6.8.0-51.52 \
-  linux-headers-6.8.0-51-generic=6.8.0-51.52 \
-  linux-source-6.8.0=6.8.0-51.52
-sudo grub-set-default "Advanced options for Ubuntu>Ubuntu, with Linux 6.8.0-51-generic"
+  linux-headers-6.8.0-51-generic=6.8.0-51.52
+  
+sudo sed -i 's/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=menu/' /etc/default/grub
+sudo sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=60/' /etc/default/grub
 sudo update-grub
 sudo reboot
 </pre>
 
-After rebooting, run `uname -r` again to confirm that the system is using the required kernel. The output should be: `6.8.0-51-generic`
+After rebooting, select **6.8.0-51-generic** from the GRUB boot menu. Once the system starts, run `uname -r` 
+The output should be: `6.8.0-51-generic` 
 
 4. Install the Linux source package from the repository, then navigate to the source directory and extract the files.
    <pre>
