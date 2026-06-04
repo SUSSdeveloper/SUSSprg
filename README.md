@@ -41,24 +41,45 @@ The simple installation process involves the following steps:
 			   bison autoconf llvm zstd dwarves bc
    </pre>
 
-3. Install the Linux source package from the repository, then navigate to the source directory and extract the files.
+3.  After installation, check the currently running kernel version using: `uname -r`
+The expected version is: 6.8.0-51-generic. This version is required because the modified files in this project are based on Ubuntu kernel version `6.8.0-51.52`.
+
+If your system is running a different kernel version, you can install and boot into `6.8.0-51-generic` using the following commands:
+<pre>
+sudo apt update
+sudo apt install -y \
+  linux-image-6.8.0-51-generic=6.8.0-51.52 \
+  linux-modules-6.8.0-51-generic=6.8.0-51.52 \
+  linux-modules-extra-6.8.0-51-generic=6.8.0-51.52 \
+  linux-headers-6.8.0-51-generic=6.8.0-51.52
+  
+sudo sed -i 's/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=menu/' /etc/default/grub
+sudo sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=60/' /etc/default/grub
+sudo update-grub
+sudo reboot
+</pre>
+
+After rebooting, select **6.8.0-51-generic** from the GRUB boot menu. Once the system starts, run `uname -r` 
+The output should be: `6.8.0-51-generic` 
+
+4. Install the Linux source package from the repository, then navigate to the source directory and extract the files.
    <pre>
    sudo apt-get install linux-source-6.8.0=6.8.0-51.52
    cd /usr/src
    sudo tar -xvf linux-source-6.8.0.tar.bz2
    </pre>
 
-4. Copy the current kernel configuration file from the boot directory to the extracted directory, renaming it as `.config`. This step ensures that the existing kernel settings are preserved and used as a baseline for further configuration. 
+5. Copy the current kernel configuration file from the boot directory to the extracted directory, renaming it as `.config`. This step ensures that the existing kernel settings are preserved and used as a baseline for further configuration. 
    <pre>
    cd /usr/src/linux-source-6.8.0/
    sudo cp /boot/config-$(uname -r) .config
    sudo make oldconfig
    </pre>
 
-5. Open the `.config` file located at `/usr/src/linux-source-6.8.0` with a text editor and find keys of `CONFIG_SYSTEM_TRUSTED_KEYS` and `CONFIG_SYSTEM_REVOCATION_KEYS` and empty their values.
+6. Open the `.config` file located at `/usr/src/linux-source-6.8.0` with a text editor and find keys of `CONFIG_SYSTEM_TRUSTED_KEYS` and `CONFIG_SYSTEM_REVOCATION_KEYS` and empty their values.
 
 
-6. Prior to compiling the kernel, download the `sourceCode` directory from the project and replace the corresponding files with the modified ones. In this example, run:
+7. Prior to compiling the kernel, download the `sourceCode` directory from the project and replace the corresponding files with the modified ones. In this example, run:
    <pre>
    sudo cp  sourceCode/linux-6.8/suss/tcp_cubic.c   /usr/src/linux-source-6.8.0/net/ipv4/tcp_cubic.c
    sudo cp  sourceCode/linux-6.8/suss/tcp_input.c   /usr/src/linux-source-6.8.0/net/ipv4/tcp_input.c
@@ -67,32 +88,32 @@ The simple installation process involves the following steps:
    sudo cp  sourceCode/linux-6.8/suss/tcp.h         /usr/src/linux-source-6.8.0/include/linux/tcp.h
    </pre>
       
-7. Compile the kernel:
+8. Compile the kernel:
    <pre>
    cd /usr/src/linux-source-6.8.0/
    sudo make -j $(nproc)
    </pre>
    <br>The compilation process may take some time, depending on your system's hardware.
 
-8. After successful compilation, install the new kernel using:
+9. After successful compilation, install the new kernel using:
    <pre>
    sudo make modules_install -j $(nproc)
    sudo make install
    </pre>
    <br>This will install the kernel image, kernel modules, and update the bootloader configuration.
 
-9. Update GRUB Configuration:
+10. Update GRUB Configuration:
    <pre>
    sudo update-grub
    </pre>
 
-10. After the installation and GRUB configuration update, reboot your system to use the newly compiled kernel:
+11. After the installation and GRUB configuration update, reboot your system to use the newly compiled kernel:
    <pre>
    sudo reboot
    </pre>
 If the server fails to boot with the new kernel, enter the BIOS settings and disable the Secure Boot option.
 
-11. To verify a successful installation, confirm that `suss` appears in the output of:
+12. To verify a successful installation, confirm that `suss` appears in the output of:
    <pre>
    ls /sys/module/tcp_cubic/parameters
    </pre>
